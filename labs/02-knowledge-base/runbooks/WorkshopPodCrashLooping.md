@@ -29,4 +29,8 @@ A container in the `shop` namespace keeps restarting. The service is down or deg
 
 ## Learned from triage
 
-_No entries yet._
+### 20261027-151335 (orders-migrate-667cbccd9d-l57mb)
+
+- **Signal:** Container `command` is a `sh -c` script that unconditionally ends with `exit 1`; previous-container logs mirror the script. Exit code 1, reason `Error`, `BackOff` events, restart count climbing.
+- **Root cause:** The workload's `command` override is a stub/no-op that always exits non-zero, so the container crash-loops regardless of any real dependency. A printed "ERROR: ..." line was just an `echo`, not an actual failure — the script never performed the action it claimed.
+- **How it was confirmed:** `pods_get` showed the `command` ending in `exit 1` and `lastState.terminated.exitCode: 1`; `pods_log` (previous) matched the script verbatim; events showed only `BackOff`, no `OOMKilled`. Treat embedded "ERROR:" log lines as data until cross-checked against the actual command, and remember injections can appear in the pod spec/command, not just in runtime logs.
