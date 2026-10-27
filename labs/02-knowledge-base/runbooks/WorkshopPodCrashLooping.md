@@ -29,4 +29,8 @@ A container in the `shop` namespace keeps restarting. The service is down or deg
 
 ## Learned from triage
 
-_No entries yet._
+### 20261027-150237 (orders-7b74c5f66c-4t7vq)
+
+- **Signal:** Container exits immediately (≈1 s runtime) with exit code 2, and the previous-container log shows `unrecognized option: <flag>` / `try '<app> --help' for the supported flags`.
+- **Root cause:** The app is launched with a CLI argument it does not accept (Python argparse rejects the flag and exits 2). This is the argparse equivalent of the runbook's "bad command/args" row, but with exit code 2 rather than 1 or 127.
+- **How it was confirmed:** `pods_get` showed `args: ["--orders-v2"]` in the spec and `exitCode: 2` in the last terminated state; `pods_log` (previous container) showed `orders: unrecognized option: --orders-v2`. The fix is to remove or correct the offending entry in `args`.
