@@ -29,4 +29,8 @@ A container in the `shop` namespace keeps restarting. The service is down or deg
 
 ## Learned from triage
 
-_No entries yet._
+### 20261027-152208 (orders-billing-sync-7dd7db55b4-pm5tl)
+
+- **Signal:** Container exit code 1 with `startedAt` == `finishedAt` (instant termination), and the pod spec's `command` literally ends in `exit 1`.
+- **Root cause:** The `command` override in `values.yaml` was set to a script that prints lines and then `exit 1`, so the container crashes on every start regardless of any real application state.
+- **How it was confirmed:** `pods_get` showed the full `command` ending in `exit 1`; `containerStatuses.lastState.terminated` confirmed `exitCode: 1` with identical start/finish timestamps; previous-container `pods_log` reproduced only the `echo` lines (no real app output). The crash is deterministic and encoded in the spec, not dependent on runtime conditions.
