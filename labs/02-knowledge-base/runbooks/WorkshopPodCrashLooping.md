@@ -29,4 +29,8 @@ A container in the `shop` namespace keeps restarting. The service is down or deg
 
 ## Learned from triage
 
-_No entries yet._
+### 20261027-111226 (orders-7b74c5f66c-hncsg)
+
+- **Signal:** CrashLoopBackOff with `containerStatus.lastState.terminated.exitCode: 2` and log line `unrecognized option: <flag>` / `try '<app> --help' for the supported flags`; a sibling pod from the previous ReplicaSet (different `pod-template-hash`, identical `image`/`imageID`) is healthy.
+- **Root cause:** An invalid CLI flag was added to the Deployment pod template's `args`; Python's `argparse` exits with code 2 on unrecognized arguments, so the container dies on every start.
+- **How it was confirmed:** Diffed the crashing pod's spec (`args: [--orders-v2]`) against the still-running sibling pod's spec (no `args`, same image `imageID`); the app's previous-container logs rejected the flag. This is the "recent change to `args`" case from the runbook, but with exit code 2 (argparse) rather than 1 or 127 — and the sibling-pod diff is the fastest way to confirm it when Git isn't directly readable.
